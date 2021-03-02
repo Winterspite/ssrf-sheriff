@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/teknogeek/ssrf-sheriff/handler"
+	"github.com/wh1tenoise/ssrf-sheriff/handler"
 	"go.uber.org/fx"
 )
 
