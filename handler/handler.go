@@ -143,10 +143,14 @@ func NewConfigProvider() (config.Provider, error) {
 }
 
 // NewLogger returns a new *zap.Logger
-func NewLogger() (*zap.Logger, error) {
+func NewLogger(cfg config.Provider) (*zap.Logger, error) {
 	zapConfig := zap.NewProductionConfig()
-	zapConfig.Encoding = "console"
-	zapConfig.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	zapConfig.Encoding = cfg.Get("logging.format").String()
+	if cfg.Get("logging.timeEncoder").String() == "EpochMillisTimeEncoder" {
+		zapConfig.EncoderConfig.EncodeTime = zapcore.EpochMillisTimeEncoder
+	} else if cfg.Get("logging.timeEncoder").String() == "ISO8601TimeEncoder" {
+		zapConfig.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	}
 	zapConfig.DisableStacktrace = true
 
 	return zapConfig.Build()
