@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
-	"github.com/wh1tenoise/generators"
+	"github.com/wh1tenoise/ssrf-sheriff/generators"
 	"github.com/wh1tenoise/ssrf-sheriff/httpserver"
 	"go.uber.org/config"
 	"go.uber.org/fx"
