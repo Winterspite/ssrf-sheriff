@@ -6,3 +6,4 @@ ssrf_token: "REPLACE_THIS_WITH_YOUR_SECRET_VALUE"
 logging:
   format: "console"
   timeEncoder: "ISO8601TimeEncoder"
+  file: "/var/log/ssrf-sheriff.log"

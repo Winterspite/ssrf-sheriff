@@ -153,5 +153,9 @@ func NewLogger(cfg config.Provider) (*zap.Logger, error) {
 	}
 	zapConfig.DisableStacktrace = true
 
+	if cfg.Get("logging.file").String() != "" {
+		zapConfig.OutputPaths = []string{"stdout", cfg.Get("logging.file").String()}
+	}
+
 	return zapConfig.Build()
 }
