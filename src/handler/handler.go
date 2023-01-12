@@ -159,6 +159,7 @@ func NewConfigProvider() (config.Provider, error) {
 		return nil, err
 	}
 
+	// If we have an optional `user.yaml` configuration file, use those settings instead.
 	_, err = os.Stat("config/user.yaml")
 	if err == nil {
 		// File exists and we could read it.

@@ -20,6 +20,11 @@ This is an SSRF testing sheriff written in Go. It was originally created for the
     - MP3
     - MP4
 
+## Configuration
+
+You are welcome to either edit `base.yaml` or create a `user.yaml` that takes precedence and 
+overrides settings to configure the service.
+
 ## Usage
 
 ```bash
