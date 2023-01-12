@@ -159,6 +159,17 @@ func NewConfigProvider() (config.Provider, error) {
 		return nil, err
 	}
 
+	_, err = os.Stat("config/user.yaml")
+	if err == nil {
+		// File exists and we could read it.
+		uf, err := os.Open("config/user.yaml")
+		if err != nil {
+			return nil, err
+		}
+
+		return config.NewYAML(config.Source(f), config.Source(uf))
+	}
+
 	return config.NewYAML(config.Source(f))
 }
 

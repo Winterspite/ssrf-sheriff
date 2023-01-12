@@ -16,3 +16,6 @@
 .env
 *.rdb
 .idea/*
+# Ignore user config overrides.
+config/user.yaml
+*.log
