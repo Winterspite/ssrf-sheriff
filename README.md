@@ -64,12 +64,13 @@ Content-Length: 81
 
 ## TODO
 
-- Dynamically generate valid responses with the secret token visible for
-  - GIF
-  - MP3
-  - MP4
-- Secrets in HTTP response generated/created/signed per-request, instead of returning a single secret for all requests
-- TLS support
+- [ ] Helm chart to create service with ingress for easy deployment to EKS.
+- [ ] Dynamically generate valid responses with the secret token visible for
+  - [ ] GIF
+  - [ ] MP3
+  - [ ] MP4
+- [ ] Secrets in HTTP response generated/created/signed per-request, instead of returning a single secret for all requests
+- [ ] TLS support
 
 ## Credit
 
