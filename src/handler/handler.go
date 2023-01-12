@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/winterspite/ssrf-sheriff/src/generators"
@@ -26,8 +27,10 @@ type SerializableResponse struct {
 
 // SSRFSheriffRouter is a wrapper around mux.Router to handle HTTP requests to the sheriff, with logging
 type SSRFSheriffRouter struct {
-	logger    *zap.Logger
-	ssrfToken string
+	logger         *zap.Logger
+	ssrfToken      string
+	webhook        string
+	healthcheckURL string
 }
 
 // NewHTTPServer provides a new HTTP server listener
@@ -47,8 +50,10 @@ func NewSSRFSheriffRouter(
 	cfg config.Provider,
 ) *SSRFSheriffRouter {
 	return &SSRFSheriffRouter{
-		logger:    logger,
-		ssrfToken: cfg.Get("ssrf_token").String(),
+		logger:         logger,
+		ssrfToken:      cfg.Get("ssrf_token").String(),
+		webhook:        cfg.Get("webhook").String(),
+		healthcheckURL: cfg.Get("healthcheck_url").String(),
 	}
 }
 
@@ -121,6 +126,10 @@ func (s *SSRFSheriffRouter) PathHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("X-Secret-Token", s.ssrfToken)
 	w.WriteHeader(http.StatusOK)
+
+	if !strings.Contains(r.URL.Path, s.healthcheckURL) && s.webhook != "" {
+		s.PostNotification(r)
+	}
 
 	_, _ = w.Write(responseBytes)
 }
