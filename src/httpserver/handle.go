@@ -44,7 +44,7 @@ func newDialer() dialer { return new(net.Dialer) }
 // Changes how we build dialers.
 //
 // This is an unexported option used for testing only.
-func newDialerFunc(f func() dialer) HandleOption {
+func newDialerFunc(f func() dialer) HandleOption { //nolint:unused
 	return handleOptionFunc(func(h *Handle) {
 		h.newDialerFunc = f
 	})
@@ -103,6 +103,7 @@ func (h *Handle) Addr() net.Addr {
 	if h.ln == nil {
 		return nil
 	}
+
 	return h.ln.Addr()
 }
 
@@ -113,17 +114,17 @@ func (h *Handle) Addr() net.Addr {
 // The server is started on the address defined on Server.Addr, defaulting to
 // an OS-assigned port (":0") if Server.Addr is empty.
 //
-//   h := httpserver.NewHandle(&http.Server{Handler: myHandler})
-//   err := h.Start(ctx)
+//	h := httpserver.NewHandle(&http.Server{Handler: myHandler})
+//	err := h.Start(ctx)
 //
 // Note that because the server is started in a separate goroutine, this
 // method is safe to use as-is inside Fx Lifecycle hooks.
 //
-//   fx.Hook{
-//     OnStart: handle.Start,
-//     OnStop: handle.Shutdown,
-//   }
-func (h *Handle) Start(ctx context.Context) error {
+//	fx.Hook{
+//	  OnStart: handle.Start,
+//	  OnStop: handle.Shutdown,
+//	}
+func (h *Handle) Start(ctx context.Context) error { //nolint:funlen
 	if h.ln != nil {
 		return errors.New("server is already running")
 	}
@@ -139,10 +140,11 @@ func (h *Handle) Start(ctx context.Context) error {
 	// errors. If we encounter one of those, we can abort immediately.
 	ln, err := h.listenFunc("tcp", addr)
 	if err != nil {
-		return fmt.Errorf("error starting HTTP server on %q: %v", addr, err)
+		return fmt.Errorf("error starting HTTP server on %q: %w", addr, err)
 	}
 
 	errCh := make(chan error, 1)
+
 	go func() {
 		// Serve blocks until it encounters an error or until the server shuts
 		// down, so we need to call it in a separate goroutine. Errors here
@@ -174,7 +176,7 @@ func (h *Handle) Start(ctx context.Context) error {
 		case err := <-errCh:
 			// If the server failed to start up, errCh probably has a more
 			// helpful error.
-			return fmt.Errorf("error starting HTTP server: %v", err)
+			return fmt.Errorf("error starting HTTP server: %w", err)
 		default:
 			// Kill the listener if we failed to start the server up.
 			//
@@ -188,6 +190,7 @@ func (h *Handle) Start(ctx context.Context) error {
 
 	h.errCh = errCh
 	h.ln = ln
+
 	return nil
 }
 
@@ -200,10 +203,11 @@ func (h *Handle) Shutdown(ctx context.Context) error {
 		return err
 	}
 
-	if err := <-h.errCh; err != http.ErrServerClosed {
+	if err := <-h.errCh; !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 
 	h.ln = nil
+
 	return nil
 }

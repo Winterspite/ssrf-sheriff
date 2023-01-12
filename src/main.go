@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/wh1tenoise/ssrf-sheriff/handler"
+	"github.com/winterspite/ssrf-sheriff/src/handler"
 	"go.uber.org/fx"
 )
 

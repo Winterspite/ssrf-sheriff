@@ -2,11 +2,10 @@
 
 This is an SSRF testing sheriff written in Go. It was originally created for the [Uber H1-4420 2019 London Live Hacking Event](https://www.hackerone.com/blog/london-called-hackers-answered-recapping-h1-4420), but it is now being open-sourced for other organizations to implement and contribute back to.
 
-
 ## Features
 
 - Respond to any HTTP method (`GET`, `POST`, `PUT`, `DELETE`, etc.)
-- Configurable secret token (see [base.example.yaml](config/base.example.yaml))
+- Configurable secret token (see [base.yaml](config/base.yaml))
 - Content-specific responses
   - With secret token in response body
     - JSON
@@ -26,7 +25,6 @@ This is an SSRF testing sheriff written in Go. It was originally created for the
 ```bash
 go get github.com/teknogeek/ssrf-sheriff
 cd $GOPATH/src/github.com/teknogeek/ssrf-sheriff
-cp config/base.example.yaml config/base.yaml
 
 # ... configure ...
 
@@ -72,9 +70,7 @@ Content-Length: 81
 
 Inspired (and requested) by [Frans Rosén](https://twitter.com/fransrosen) during his [talk at BountyCon '19 Singapore](https://speakerdeck.com/fransrosen/live-hacking-like-a-mvh-a-walkthrough-on-methodology-and-strategies-to-win-big?slide=49)
 
-
 -----
 
 Released under the [MIT License](LICENSE.txt).
-
 

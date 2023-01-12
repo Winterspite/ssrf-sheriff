@@ -36,7 +36,7 @@ func waitUntilAvailable(ctx context.Context, d dialer, addr string) error {
 		// connection. Here we're applying the same deadline to the rest of
 		// this TCP conversation.
 		if err := conn.SetDeadline(deadline); err != nil {
-			return fmt.Errorf("failed to set connection deadline to %v: %v", deadline, err)
+			return fmt.Errorf("failed to set connection deadline to %v: %w", deadline, err)
 		}
 	}
 
@@ -61,7 +61,8 @@ func wrapNetErr(err error, msg string, args ...interface{}) error {
 		return nil
 	}
 
-	if ne, ok := err.(net.Error); ok && ne.Timeout() {
+	// type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors
+	if ne, ok := err.(net.Error); ok && ne.Timeout() { //nolint:errorlint
 		return context.DeadlineExceeded
 	}
 
@@ -69,5 +70,5 @@ func wrapNetErr(err error, msg string, args ...interface{}) error {
 		msg = fmt.Sprintf(msg, args...)
 	}
 
-	return fmt.Errorf("%s: %v", msg, err)
+	return fmt.Errorf("%s: %w", msg, err)
 }

@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"mime"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/gorilla/mux"
-	"github.com/wh1tenoise/ssrf-sheriff/generators"
-	"github.com/wh1tenoise/ssrf-sheriff/httpserver"
+	"github.com/winterspite/ssrf-sheriff/src/generators"
+	"github.com/winterspite/ssrf-sheriff/src/httpserver"
 	"go.uber.org/config"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -35,7 +35,6 @@ func NewHTTPServer(
 	mux *mux.Router,
 	cfg config.Provider,
 ) *http.Server {
-
 	return &http.Server{
 		Addr:    cfg.Get("http.address").String(),
 		Handler: mux,
@@ -62,6 +61,7 @@ func StartFilesGenerator(cfg config.Provider) {
 // StartServer starts the HTTP server
 func StartServer(server *http.Server, lc fx.Lifecycle) {
 	h := httpserver.NewHandle(server)
+
 	lc.Append(fx.Hook{
 		OnStart: h.Start,
 		OnStop:  h.Shutdown,
@@ -72,6 +72,7 @@ func StartServer(server *http.Server, lc fx.Lifecycle) {
 func (s *SSRFSheriffRouter) PathHandler(w http.ResponseWriter, r *http.Request) {
 	fileExtension := filepath.Ext(r.URL.Path)
 	contentType := mime.TypeByExtension(fileExtension)
+
 	var response string
 
 	switch fileExtension {
@@ -116,41 +117,53 @@ func (s *SSRFSheriffRouter) PathHandler(w http.ResponseWriter, r *http.Request) 
 	)
 
 	responseBytes := []byte(response)
+
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("X-Secret-Token", s.ssrfToken)
 	w.WriteHeader(http.StatusOK)
-	w.Write(responseBytes)
+
+	_, _ = w.Write(responseBytes)
 }
 
 func readTemplateFile(templateFileName string) string {
-	data, err := ioutil.ReadFile(path.Join("templates", path.Clean(templateFileName)))
+	data, err := os.ReadFile(path.Join("templates", path.Clean(templateFileName)))
 	if err != nil {
 		return ""
 	}
+
 	return string(data)
 }
 
 // NewServerRouter returns a new mux.Router for handling any HTTP request to /.*
 func NewServerRouter(s *SSRFSheriffRouter) *mux.Router {
 	router := mux.NewRouter()
+
 	router.PathPrefix("/").HandlerFunc(s.PathHandler)
+
 	return router
 }
 
 // NewConfigProvider returns a config.Provider for YAML configuration
 func NewConfigProvider() (config.Provider, error) {
-	return config.NewYAMLProviderFromFiles("config/base.yaml")
+	f, err := os.Open("config/base.yaml")
+	if err != nil {
+		return nil, err
+	}
+
+	return config.NewYAML(config.Source(f))
 }
 
 // NewLogger returns a new *zap.Logger
 func NewLogger(cfg config.Provider) (*zap.Logger, error) {
 	zapConfig := zap.NewProductionConfig()
 	zapConfig.Encoding = cfg.Get("logging.format").String()
+
 	if cfg.Get("logging.timeEncoder").String() == "EpochMillisTimeEncoder" {
 		zapConfig.EncoderConfig.EncodeTime = zapcore.EpochMillisTimeEncoder
 	} else if cfg.Get("logging.timeEncoder").String() == "ISO8601TimeEncoder" {
 		zapConfig.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
+
 	zapConfig.DisableStacktrace = true
 
 	if cfg.Get("logging.file").String() != "" {
