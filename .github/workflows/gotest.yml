@@ -18,4 +18,4 @@ jobs:
       - name: Test
         run: go test -v ./...
       - name: Build
-        run: go build -v ./src/
+        run: go build -o service ./src/

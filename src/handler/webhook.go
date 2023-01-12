@@ -4,8 +4,9 @@ package handler
 
 import (
 	"fmt"
-	"github.com/ashwanthkumar/slack-go-webhook"
 	"net/http"
+
+	"github.com/ashwanthkumar/slack-go-webhook"
 )
 
 func (s *SSRFSheriffRouter) PostNotification(r *http.Request) {
@@ -19,5 +20,4 @@ func (s *SSRFSheriffRouter) PostNotification(r *http.Request) {
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("failed to send slack message: %v", err))
 	}
-
 }
