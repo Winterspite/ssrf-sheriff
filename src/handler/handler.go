@@ -127,7 +127,13 @@ func (s *SSRFSheriffRouter) PathHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("X-Secret-Token", s.ssrfToken)
 	w.WriteHeader(http.StatusOK)
 
-	if !strings.Contains(r.URL.Path, s.healthcheckURL) && s.webhook != "" {
+	elbHealthCheck := false
+
+	if strings.Contains(r.Header.Get("User-Agent"), "ELB-HealthChecker/") {
+		elbHealthCheck = true
+	}
+
+	if !strings.Contains(r.URL.Path, s.healthcheckURL) && s.webhook != "" && !elbHealthCheck {
 		s.PostNotification(r)
 	}
 
