@@ -64,12 +64,14 @@ Content-Length: 81
 
 ## TODO
 
-- Dynamically generate valid responses with the secret token visible for
-  - GIF
-  - MP3
-  - MP4
-- Secrets in HTTP response generated/created/signed per-request, instead of returning a single secret for all requests
-- TLS support
+- [ ] Helm chart to create service with ingress for easy deployment to EKS.
+  - [ ] ~TLS support~ This should be handled once we can deploy to EKS with an ALB in front of service.
+- [x] Replace YAML configuration system with [viper](https://github.com/spf13/viper) so we don't need to rebuild docker container each time we change config.
+- [ ] Dynamically generate valid responses with the secret token visible for
+  - [ ] GIF
+  - [ ] MP3
+  - [ ] MP4
+- [ ] Secrets in HTTP response generated/created/signed per-request, instead of returning a single secret for all requests
 
 ## Credit
 
