@@ -12,9 +12,10 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
+	"github.com/winterspite/ssrf-sheriff/src/constants"
 	"github.com/winterspite/ssrf-sheriff/src/generators"
 	"github.com/winterspite/ssrf-sheriff/src/httpserver"
-	"go.uber.org/config"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -34,33 +35,27 @@ type SSRFSheriffRouter struct {
 }
 
 // NewHTTPServer provides a new HTTP server listener
-func NewHTTPServer(
-	mux *mux.Router,
-	cfg config.Provider,
-) *http.Server {
+func NewHTTPServer(mux *mux.Router) *http.Server {
 	return &http.Server{
-		Addr:    cfg.Get("http.address").String(),
+		Addr:    viper.GetString(constants.EnvAddr),
 		Handler: mux,
 	}
 }
 
 // NewSSRFSheriffRouter returns a new SSRFSheriffRouter which is used to route and handle all HTTP requests
-func NewSSRFSheriffRouter(
-	logger *zap.Logger,
-	cfg config.Provider,
-) *SSRFSheriffRouter {
+func NewSSRFSheriffRouter(logger *zap.Logger) *SSRFSheriffRouter {
 	return &SSRFSheriffRouter{
 		logger:         logger,
-		ssrfToken:      cfg.Get("ssrf_token").String(),
-		webhook:        cfg.Get("webhook").String(),
-		healthcheckURL: cfg.Get("healthcheck_url").String(),
+		ssrfToken:      viper.GetString(constants.EnvSSRFToken),
+		webhook:        viper.GetString(constants.EnvWebhookURL),
+		healthcheckURL: viper.GetString(constants.EnvHealthcheckURL),
 	}
 }
 
 // StartFilesGenerator starts the function which is dynamically generating JPG/PNG formats
 // with the secret token rendered in the media
-func StartFilesGenerator(cfg config.Provider) {
-	generators.InitMediaGenerators(cfg.Get("ssrf_token").String())
+func StartFilesGenerator() {
+	generators.InitMediaGenerators(viper.GetString(constants.EnvSSRFToken))
 }
 
 // StartServer starts the HTTP server
@@ -115,8 +110,7 @@ func (s *SSRFSheriffRouter) PathHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	s.logger.Info("New inbound HTTP request",
-		zap.String("IP", r.RemoteAddr),
-		zap.String("Path", r.URL.Path),
+		zap.String("IP", r.RemoteAddr), zap.String("Path", r.URL.Path),
 		zap.String("Response Content-Type", contentType),
 		zap.Any("Request Headers", r.Header),
 	)
@@ -127,17 +121,27 @@ func (s *SSRFSheriffRouter) PathHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("X-Secret-Token", s.ssrfToken)
 	w.WriteHeader(http.StatusOK)
 
+	if s.shouldPostNotification(r) {
+		s.PostNotification(r)
+	}
+
+	_, _ = w.Write(responseBytes)
+}
+
+// shouldPostNotification contains our logic for whether to trigger a webhook notification of SSRF.
+func (s *SSRFSheriffRouter) shouldPostNotification(r *http.Request) bool {
 	elbHealthCheck := false
 
 	if strings.Contains(r.Header.Get("User-Agent"), "ELB-HealthChecker/") {
 		elbHealthCheck = true
 	}
 
+	// If we are not the healthcheck URL, it's not an ELB health check request, and we have a webhook configured.
 	if !strings.Contains(r.URL.Path, s.healthcheckURL) && s.webhook != "" && !elbHealthCheck {
-		s.PostNotification(r)
+		return true
 	}
 
-	_, _ = w.Write(responseBytes)
+	return false
 }
 
 func readTemplateFile(templateFileName string) string {
@@ -158,43 +162,18 @@ func NewServerRouter(s *SSRFSheriffRouter) *mux.Router {
 	return router
 }
 
-// NewConfigProvider returns a config.Provider for YAML configuration
-func NewConfigProvider() (config.Provider, error) {
-	f, err := os.Open("config/base.yaml")
-	if err != nil {
-		return nil, err
-	}
-
-	// If we have an optional `user.yaml` configuration file, use those settings instead.
-	_, err = os.Stat("config/user.yaml")
-	if err == nil {
-		// File exists and we could read it.
-		uf, err := os.Open("config/user.yaml")
-		if err != nil {
-			return nil, err
-		}
-
-		return config.NewYAML(config.Source(f), config.Source(uf))
-	}
-
-	return config.NewYAML(config.Source(f))
-}
-
 // NewLogger returns a new *zap.Logger
-func NewLogger(cfg config.Provider) (*zap.Logger, error) {
+func NewLogger() (*zap.Logger, error) {
 	zapConfig := zap.NewProductionConfig()
-	zapConfig.Encoding = cfg.Get("logging.format").String()
-
-	if cfg.Get("logging.timeEncoder").String() == "EpochMillisTimeEncoder" {
-		zapConfig.EncoderConfig.EncodeTime = zapcore.EpochMillisTimeEncoder
-	} else if cfg.Get("logging.timeEncoder").String() == "ISO8601TimeEncoder" {
-		zapConfig.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	}
+	zapConfig.Encoding = viper.GetString(constants.EnvLoggingFormat)
+	zapConfig.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
 	zapConfig.DisableStacktrace = true
 
-	if cfg.Get("logging.file").String() != "" {
-		zapConfig.OutputPaths = []string{"stdout", cfg.Get("logging.file").String()}
+	if viper.GetString(constants.EnvLogFileName) != "" {
+		zapConfig.OutputPaths = []string{"stdout", viper.GetString(constants.EnvLogFileName)}
+	} else {
+		zapConfig.OutputPaths = []string{"stdout"}
 	}
 
 	return zapConfig.Build()
